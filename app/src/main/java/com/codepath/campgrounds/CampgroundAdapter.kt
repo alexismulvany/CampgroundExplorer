@@ -25,11 +25,16 @@ class CampgroundAdapter(private val context: Context, private val campgrounds: L
 
     override fun getItemCount() = campgrounds.size
 
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener {
         private val nameTextView = itemView.findViewById<TextView>(R.id.campgroundName)
         private val descriptionTextView = itemView.findViewById<TextView>(R.id.campgroundDescription)
         private val locationTextView = itemView.findViewById<TextView>(R.id.campgroundLocation)
         private val imageView = itemView.findViewById<ImageView>(R.id.campgroundImage)
+
+        // init block to tell the row to listen for clicks
+        init {
+            itemView.setOnClickListener(this)
+        }
 
         fun bind(campground: Campground) {
             nameTextView.text = campground.name
@@ -45,7 +50,7 @@ class CampgroundAdapter(private val context: Context, private val campgrounds: L
             // Get selected campground
             val campground = campgrounds[absoluteAdapterPosition]
 
-            //  Navigate to Details screen and pass selected campground
+            // Navigate to Details screen and pass selected campground
             val intent = Intent(context, DetailActivity::class.java)
             intent.putExtra(CAMPGROUND_EXTRA, campground)
             context.startActivity(intent)
