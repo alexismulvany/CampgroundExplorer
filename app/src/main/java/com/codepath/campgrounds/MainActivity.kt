@@ -1,5 +1,8 @@
 package com.codepath.campgrounds
 
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.launch
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -44,6 +47,24 @@ class MainActivity : AppCompatActivity() {
         val campgroundAdapter = CampgroundAdapter(this, campgrounds)
         campgroundsRecyclerView.adapter = campgroundAdapter
 
+        // Step 7
+        lifecycleScope.launch {
+            (application as CampgroundApplication).db.campgroundDao().getAll().collect { databaseList ->
+                databaseList.map { entity ->
+                    Campground(
+                        entity.name,
+                        entity.description,
+                        entity.latLong,
+                        listOf(CampgroundImage(entity.imageUrl, null))
+                    )
+                }.also { mappedList ->
+                    campgrounds.clear()
+                    campgrounds.addAll(mappedList)
+                    campgroundAdapter.notifyDataSetChanged()
+                }
+            }
+        }
+
         campgroundsRecyclerView.layoutManager = LinearLayoutManager(this).also {
             val dividerItemDecoration = DividerItemDecoration(this, it.orientation)
             campgroundsRecyclerView.addItemDecoration(dividerItemDecoration)
@@ -63,16 +84,23 @@ class MainActivity : AppCompatActivity() {
             override fun onSuccess(statusCode: Int, headers: Headers, json: JSON) {
                 Log.i(TAG, "Successfully fetched campgrounds: $json")
                 try {
-                    // Create the parsedJSON
                     val parsedJson = createJson().decodeFromString(
                         CampgroundResponse.serializer(),
                         json.jsonObject.toString()
                     )
 
-                    // Save the campgrounds and reload the screen
                     parsedJson.data?.let { list ->
-                        campgrounds.addAll(list)
-                        campgroundAdapter.notifyDataSetChanged()
+                        lifecycleScope.launch(IO) {
+                            (application as CampgroundApplication).db.campgroundDao().deleteAll()
+                            (application as CampgroundApplication).db.campgroundDao().insertAll(list.map {
+                                CampgroundEntity(
+                                    name = it.name,
+                                    description = it.description,
+                                    latLong = it.latLong,
+                                    imageUrl = it.imageUrl
+                                )
+                            })
+                        }
                     }
 
                 } catch (e: JSONException) {
