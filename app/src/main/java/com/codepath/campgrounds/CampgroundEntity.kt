@@ -1,4 +1,4 @@
-package com.codepath.campgrounds // Update to match your actual package name
+package com.codepath.campgrounds
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
